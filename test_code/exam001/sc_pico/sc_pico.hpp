@@ -27,7 +27,7 @@
 
 //! @file sc_pico.hpp
 //! @brief picoに関するプログラム
-//! @date 2023-10-26T17:22
+//! @date 2023-10-27T00:09
 
 
 namespace pico
@@ -147,6 +147,8 @@ namespace pico
         static void uart0_handler();
         static void uart1_handler();
     };
+    std::deque<uint8_t> uart0_input_data;
+    std::deque<uint8_t> uart1_input_data;
 
     //! @brief picoのPWM
     class PWM : public sc::PWM
