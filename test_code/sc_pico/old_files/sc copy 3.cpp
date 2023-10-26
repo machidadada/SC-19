@@ -1,3 +1,5 @@
+#include "sc.hpp"
+
 /*************************************
  *************************************
 
@@ -9,12 +11,9 @@
 *************************************
 *************************************/
 
-#include "sc.hpp"
-
 //! @file sc.cpp
 //! @brief プログラム全体で共通の，基本的な機能
-//! @date 2023-10-26T17:21
-
+//! @date 2023-10-26T15:28
 
 // Raspberry pi pico での有線通信やセンサ値の処理を簡単にするプログラムです
 namespace sc
@@ -102,7 +101,7 @@ namespace sc
     Measurement::Measurement(Measurement&& old_measurement):
         _measurement(old_measurement._measurement)
     {
-        for (std::pair<const sc::Quantity::ID, sc::Quantity*>& old_element : old_measurement._measurement)
+        for (std::pair<const sc::Quantity::ID, sc::Quantity*> old_element : old_measurement._measurement)
         {
             old_element.second = nullptr;
         }
@@ -120,11 +119,10 @@ namespace sc
 
         _measurement = old_measurement._measurement;
 
-        for (std::pair<const sc::Quantity::ID, sc::Quantity*>& old_element : old_measurement._measurement)
+        for (std::pair<const sc::Quantity::ID, sc::Quantity*> old_element : old_measurement._measurement)
         {
             old_element.second = nullptr;
         }
-        return *this;
     }
 
     //! @brief newで作った要素を削除
@@ -247,13 +245,6 @@ namespace sc
     uint8_t Serial::MemoryAddr::get() const noexcept
     {
         return _memory_addr;
-    }
-
-    //! @brief メモリーアドレスへのポインタを取得
-    //! @return メモリーアドレスへのポインタ
-    const uint8_t* Serial::MemoryAddr::ptr() const noexcept
-    {
-        return &_memory_addr;
     }
 
 

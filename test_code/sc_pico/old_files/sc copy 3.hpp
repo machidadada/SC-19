@@ -1,16 +1,6 @@
 #ifndef SC19_CODE_TEST_SC_SC_HPP_
 #define SC19_CODE_TEST_SC_SC_HPP_
 
-/*************************************
- *************************************
-
-
-このファイルは見なくてかまいません
-内部の実装を知りたい場合のみ見てください
-
-
-*************************************
-*************************************/
 
 #define _USE_MATH_DEFINES  // 円周率などの定数を使用する  math.hを読み込む前に定義する必要がある (math.hはcmathやiostreamに含まれる)
 #include <cfloat>
@@ -22,10 +12,20 @@
 #include <unordered_map>
 #include <vector>
 
+/*************************************
+ *************************************
+
+
+このファイルは見なくてかまいません
+内部の実装を知りたい場合のみ見てください
+
+
+*************************************
+*************************************/
+
 //! @file sc.hpp
 //! @brief プログラム全体で共通の，基本的な機能
-//! @date 2023-10-26T17:20
-
+//! @date 2023-10-26T15:26
 
 //! @brief SCのプロジェクト全体に関わるコード
 namespace sc
@@ -51,6 +51,11 @@ namespace sc
     class Log
     {
     public:
+        //! @brief ログを記録する関数です．
+        //! 外部で定義してください．
+        //! 末尾に改行を自動で追加するような実装はしないでください．
+        //! 外部に例外(エラー)が漏れないように実装してください．
+        //! @param log 書き込む文字列
         static void write(const std::string& log) noexcept;
 
         //! @brief printfの形式でログを記録
@@ -197,7 +202,7 @@ namespace sc
         template<class QuantityDerived>
         QuantityDerived get() const
         {
-            static_assert(std::is_base_of<Quantity, QuantityDerived>::value, "\n\n<!ERROR!> The Measurement class can only handle values of child classes of type Quantity\n\n");  // MeasurementクラスではQuantity型の子クラスの値しか扱えません
+            static_assert(std::conjunction<std::is_base_of<Quantity, QuantityDerived>...>::value, "\n\n<!ERROR!> The Measurement class can only handle values of child classes of type Quantity\n\n");  // MeasurementクラスではQuantity型の子クラスの値しか扱えません
 
             return *dynamic_cast<QuantityDerived*>(_measurement.at(QuantityDerived::id()));
         }
@@ -293,7 +298,6 @@ namespace sc
         public:
             explicit MemoryAddr(uint8_t memory_addr);
             uint8_t get() const noexcept;
-            const uint8_t* ptr() const noexcept;
         };
 
         //! @brief シリアル通信で受信
