@@ -13,7 +13,7 @@
 
 //! @file sc_pico.cpp
 //! @brief picoに関するプログラム
-//! @date 2023-10-27T00:28
+//! @date 2023-10-27T11:03
 
 
 //! @brief ログを記録する関数です．
@@ -22,7 +22,7 @@ void sc::Log::write(const std::string& log) noexcept
 {
     try
     {
-        std::cout << log;
+        std::cout << log << std::flush;
     }
     catch(const std::exception& e) {Error(__FILE__, __LINE__, "Failed to save log", e);}  // ログの保存に失敗しました
     catch(...) {Error(__FILE__, __LINE__, "Failed to save log");}  // ログの保存に失敗しました
