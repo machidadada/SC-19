@@ -13,7 +13,7 @@
 
 //! @file sc_pico.cpp
 //! @brief picoに関するプログラム
-//! @date 2023-10-27T11:03
+//! @date 2023-10-28T00:37
 
 
 //! @brief ログを記録する関数です．
@@ -189,10 +189,11 @@ namespace pico
     //! @param slave_addr 通信先のデバイスのスレーブアドレス
     //! @param memory_addr 通信先のデバイス内のメモリアドレス
     //! @return Binary型のバイト列
-    sc::Binary I2C::read_mem(std::size_t size, SlaveAddr slave_addr, sc::Serial::MemoryAddr memory_addr) const
+    sc::Binary I2C::read_mem(std::size_t size, SlaveAddr slave_addr, MemoryAddr memory_addr) const
     {
         std::vector<uint8_t> input_data(size);
-        i2c_write_blocking((_i2c_id ? i2c1 : i2c0), slave_addr.get(), memory_addr.ptr(), 1, true);
+        const uint8_t memory_addr_num = memory_addr.get();
+        i2c_write_blocking((_i2c_id ? i2c1 : i2c0), slave_addr.get(), &memory_addr_num, 1, true);
         i2c_read_blocking((_i2c_id ? i2c1 : i2c0), slave_addr.get(), input_data.data(), size, false);
         return sc::Binary(input_data);
     }
@@ -209,9 +210,10 @@ namespace pico
     //! @param output_data 送信するデータ
     //! @param slave_addr 通信先のデバイスのスレーブアドレス
     //! @param memory_addr 通信先のデバイス内のメモリアドレス
-    void I2C::write_mem(sc::Binary output_data, SlaveAddr slave_addr, sc::Serial::MemoryAddr memory_addr) const
+    void I2C::write_mem(sc::Binary output_data, SlaveAddr slave_addr, MemoryAddr memory_addr) const
     {
-        i2c_write_blocking((_i2c_id ? i2c1 : i2c0), slave_addr.get(), memory_addr.ptr(), 1, true);
+        const uint8_t memory_addr_num = memory_addr.get();
+        i2c_write_blocking((_i2c_id ? i2c1 : i2c0), slave_addr.get(), &memory_addr_num, 1, true);
         i2c_write_blocking((_i2c_id ? i2c1 : i2c0), slave_addr.get(), output_data.get_raw().data(), output_data.size(), false);
     }
 
@@ -342,12 +344,12 @@ namespace pico
     //! @param memory_addr 通信先のデバイス内のメモリアドレス
     //! @return Binary型のバイト列
     //! メモリアドレスの8ビット目は自動的に1になります．
-    sc::Binary SPI::read_mem(std::size_t size, CS_Pin cs_pin, sc::Serial::MemoryAddr memory_addr) const
+    sc::Binary SPI::read_mem(std::size_t size, CS_Pin cs_pin, MemoryAddr memory_addr) const
     {
         std::vector<uint8_t> input_data(size);
-        const uint8_t read_memory_addr = memory_addr.get() | 0b10000000U;  // 8ビット目を1にする
+        const uint8_t memory_addr_num = memory_addr.get_1();
         SPI::select_cs(cs_pin);
-        spi_write_blocking((_spi_id ? spi1 : spi0), &read_memory_addr, 1);
+        spi_write_blocking((_spi_id ? spi1 : spi0), &memory_addr_num, 1);
         spi_read_blocking((_spi_id ? spi1 : spi0), 0U, input_data.data(), size);
         SPI::deselect_cs(cs_pin);
         return sc::Binary(input_data);
@@ -368,11 +370,11 @@ namespace pico
     //! @param cs_pin 通通信先につながるCSピン
     //! @param memory_addr 通信先のデバイス内のメモリアドレス
     //! メモリアドレスの8ビット目は自動的に0になります
-    void SPI::write_mem(sc::Binary output_data, CS_Pin cs_pin, sc::Serial::MemoryAddr memory_addr) const
+    void SPI::write_mem(sc::Binary output_data, CS_Pin cs_pin, MemoryAddr memory_addr) const
     {
-        const uint8_t write_memory_addr = memory_addr.get() & 0b01111111U;  // 8ビット目を0にする
+        const uint8_t memory_addr_num = memory_addr.get_0();
         SPI::select_cs(cs_pin);
-        spi_write_blocking((_spi_id ? spi1 : spi0), &write_memory_addr, 1);
+        spi_write_blocking((_spi_id ? spi1 : spi0), &memory_addr_num, 1);
         spi_write_blocking((_spi_id ? spi1 : spi0), output_data.get_raw().data(), output_data.size());
         SPI::deselect_cs(cs_pin);
     }
@@ -430,6 +432,7 @@ namespace pico
     {
         init_uart();
         set_uart_pin();
+        set_irq();
     }
 
     //! @brief UART通信を初期化する
@@ -494,10 +497,9 @@ namespace pico
     }
 
     //! @brief UARTによる受信
-    //! @param size 受信するバイト数
-    //! @param no_use 不要．互換性維持のためにある
-    //! @return Binary型のバイト列
-    sc::Binary UART::read(std::size_t size, NoUse no_use) const
+    //! @return Binary型のバイト列．
+    //! 割り込み処理で受信していたデータを全てまとめて返す．受信したデータは削除される．
+    sc::Binary UART::read() const
     {
         if (_uart_id)
         {
@@ -511,10 +513,45 @@ namespace pico
         }
     }
 
+    //! @brief UARTによる受信
+    //! @param size 受信するバイト数
+    //! @return Binary型のバイト列
+    //! 割り込み処理で受信していたデータを直近の size バイト分返す
+    sc::Binary UART::read(std::size_t size) const
+    {
+        std::deque<uint8_t> input_data;
+        if (_uart_id)
+        {
+            if (size < uart0_input_data.size())
+            {
+                for (unsigned int i = 0; i < size; ++i)
+                {
+                    input_data.push_back(uart0_input_data.front());
+                    uart0_input_data.pop_front();
+                }
+    return input_data;
+            } else {
+    return this->read();
+            }
+        } else {
+            if (size < uart1_input_data.size())
+            {
+                for (unsigned int i = 0; i < size; ++i)
+                {
+                    input_data.push_back(uart1_input_data.front());
+                    uart1_input_data.pop_front();
+                }
+    return input_data;
+            } else {
+    return this->read();
+            }
+        }
+    }
+
     //! @brief UARTによる送信
     //! @param output_data 送信するデータ
     //! @param no_use 不要．互換性維持のためにある
-    void UART::write(sc::Binary output_data, NoUse no_use) const
+    void UART::write(sc::Binary output_data) const
     {
         uart_write_blocking((_uart_id ? uart1 : uart0), output_data.get_raw().data(), output_data.size());
     }

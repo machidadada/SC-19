@@ -53,6 +53,7 @@ pico_sdk_init()
 # ビルドを実行するファイルを追加
 add_executable(SC
     sc.cpp
+    sc_pico.cpp
     sc_test.cpp
 )
 

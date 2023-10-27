@@ -36,7 +36,7 @@ namespace sc
     {
         try  // 内部でエラーが投げられたらcahchでキャッチされる
         {
-            const Serial::MemoryAddr ChipID_Addr(0x00);  // センサ内のチップIDが保存されているメモリアドレス
+            const I2C::MemoryAddr ChipID_Addr(0x00);  // センサ内のチップIDが保存されているメモリアドレス
             const Binary chip_id = _i2c.read_mem(1, _slave_addr, ChipID_Addr);  // I2Cで1バイト受信してチップIDを取得
             constexpr uint8_t CorrectChipID = 0x60;  // 正しいチップID
             if (chip_id[0] == CorrectChipID)  // 正しいチップIDが読み取れたかを確認
@@ -58,7 +58,7 @@ namespace sc
     //! @param mode 測定モード
     void Exam001::set_measurement_method(Mode mode)  // 他にも，測定の間隔やノイズ処理などの設定項目があったら，ここで設定する
     {
-        const Serial::MemoryAddr SettingMemoryAddr(0xf2);  // 設定を書き込むセンサ内のメモリアドレス
+        const I2C::MemoryAddr SettingMemoryAddr(0xf2);  // 設定を書き込むセンサ内のメモリアドレス
         _i2c.write_mem(Binary{static_cast<uint8_t>(mode << 2)}, _slave_addr, SettingMemoryAddr);  // 設定をセンサに書き込む
         // ここでしている計算(mode << 2)はセンサによって違います．これは適当に作った一例です
     }
@@ -66,7 +66,7 @@ namespace sc
     //! @brief 補正用データ読み取り
     void Exam001::read_calibration_data()
     {
-        Serial::MemoryAddr CalibrationAddr(0x88);  // センサ内でキャリブレーション用のデータが保存されているメモリアドレス
+        I2C::MemoryAddr CalibrationAddr(0x88);  // センサ内でキャリブレーション用のデータが保存されているメモリアドレス
         Binary calibration_data = _i2c.read_mem(6, _slave_addr, CalibrationAddr);  // キャリブレーションデータを受信
         dig_T1 = calibration_data[0] | (calibration_data[1] << 8);  // キャリブレーションデータを保存
         dig_T2 = calibration_data[2] | (calibration_data[3] << 8);  // 注：この時の計算方法やデータの数はセンサによって違います．この計算は適当に作った一例です
@@ -76,7 +76,7 @@ namespace sc
     // 生データ読み取り (キャリブレーション前のデータを受信)
     void Exam001::read_raw()
     {
-        const Serial::MemoryAddr TemperatureAddr(0x60);  // センサ内で気温が保存されているメモリアドレス
+        const I2C::MemoryAddr TemperatureAddr(0x60);  // センサ内で気温が保存されているメモリアドレス
         const Binary input_data = _i2c.read_mem(3, _slave_addr, TemperatureAddr);  // センサの値を受信
         _raw_temperature = static_cast<uint32_t>(input_data[0] << 12) | static_cast<uint32_t>(input_data[1] << 4) | (input_data[2] >> 4);  // 受信した値を保存
         // 注：↑計算方法などはセンサによって違います．これは適当に作った一例です
@@ -90,6 +90,6 @@ namespace sc
         // 注：キャリブレーションの計算はセンサによって全く違います．↓は適当に作った一例です
         var1 = (static_cast<int32_t>(dig_T1 << 1) * (static_cast<int32_t>(dig_T2))) >> 11;  // キャリブレーションの計算を行っています．
         var2 = (((static_cast<int32_t>(dig_T1) * static_cast<int32_t>(dig_T1)) >> 12) * static_cast<int32_t>(dig_T3)) >> 14;
-        return (var1 + var2) / 100.0;  // 補正済みの値を返す
+        return (_raw_temperature*var1 + var2) / 100.0;  // 補正済みの値を返す
     }
 }

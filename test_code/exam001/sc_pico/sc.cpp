@@ -13,7 +13,7 @@
 
 //! @file sc.cpp
 //! @brief プログラム全体で共通の，基本的な機能
-//! @date 2023-10-26T17:21
+//! @date 2023-10-27T23:08
 
 
 // Raspberry pi pico での有線通信やセンサ値の処理を簡単にするプログラムです
@@ -206,31 +206,33 @@ namespace sc
     /***********************通信***********************/
     /**************************************************/
 
-    /***** class DeviceSelect *****/
+    /***** class I2C::SlaveAddr *****/
 
-    //! @brief 通信先のデバイスを保存
-    //! @param device_select_id 通信先のデバイスのID (I2Cのスレーブアドレス，SPIのCSピンのID)
-    Serial::DeviceSelect::DeviceSelect(uint8_t device_select_id):
-        _device_select_id(device_select_id)
+    //! @brief 通信先のスレーブアドレスをセットアップ
+    //! @param device_select_id 通信先のデバイスのスレーブアドレス
+    I2C::SlaveAddr::SlaveAddr(uint8_t slave_addr):
+        _slave_addr(slave_addr)
     {
-        static constexpr uint8_t MinDeviceSelectID = 0x00;  // デバイスのIDの最小値
-        static constexpr uint8_t MaxDeviceSelectID = 0xff;  // デバイスのIDの最大値
+        static constexpr uint8_t MinSlaveAddr = 0x00;  // スレーブアドレスの最小値
+        static constexpr uint8_t MaxSlaveAddr = 0xef;  // スレーブアドレスの最大値
 
-        if (_device_select_id < MinDeviceSelectID || MaxDeviceSelectID < _device_select_id)
+        if (_slave_addr < MinSlaveAddr || MaxSlaveAddr < _slave_addr)
         {
-            throw Error(__FILE__, __LINE__, "Invalid device_select_id value entered.");  // 無効なデバイス選択用IDの値が入力されました
+            throw Error(__FILE__, __LINE__, "Invalid slave address entered.");  // 無効なスレーブアドレスの値が入力されました
         }
     }
 
-    //! @brief 通信先のデバイスを取得
-    //! @return 通信先のデバイスのID (I2Cのスレーブアドレス，SPIのCSピンのID)
-    uint8_t Serial::DeviceSelect::get() const noexcept
+    //! @brief スレーブアドレスを取得
+    //! @return スレーブアドレス
+    uint8_t I2C::SlaveAddr::get() const noexcept
     {
-        return _device_select_id;
+        return _slave_addr;
     }
 
-    //! @brief 通信先のデバイスのメモリーアドレスを設定
-    Serial::MemoryAddr::MemoryAddr(uint8_t memory_addr):
+    /***** class I2C::MemoryAddr *****/
+
+    //! @brief I2Cスレーブ内のメモリーアドレスをセットアップ
+    I2C::MemoryAddr::MemoryAddr(uint8_t memory_addr):
         _memory_addr(memory_addr)
     {
         static constexpr uint8_t MinMemoryAddr = 0x00;  // メモリーアドレスの最大値
@@ -238,22 +240,74 @@ namespace sc
         
         if (_memory_addr < MinMemoryAddr || MaxMemoryAddr < _memory_addr)
         {
-            // throw Error(__FILE__, __LINE__, "Invalid memory_addr value entered.");  // 無効なメモリーアドレスの値が入力されました
+            throw Error(__FILE__, __LINE__, "Invalid memory_addr value entered.");  // 無効なメモリーアドレスの値が入力されました
         }
     }
     
-    //! @brief 通信先のデバイスのメモリーアドレスを取得
+    //! @brief I2Cスレーブ内のメモリーアドレスを取得
     //! @return メモリーアドレス
-    uint8_t Serial::MemoryAddr::get() const noexcept
+    uint8_t I2C::MemoryAddr::get() const noexcept
     {
         return _memory_addr;
     }
 
-    //! @brief メモリーアドレスへのポインタを取得
-    //! @return メモリーアドレスへのポインタ
-    const uint8_t* Serial::MemoryAddr::ptr() const noexcept
+    /***** class SPI::CS_Pin *****/
+
+    //! @brief SPIのCSピンをセットアップ
+    //! @param cs_gpio CSピンのGPIO番号
+    SPI::CS_Pin::CS_Pin(uint8_t cs_gpio):
+        _cs_gpio(cs_gpio)
     {
-        return &_memory_addr;
+        static constexpr uint8_t MinCsGpio = 0;  // CSピンのGPIO番号の最小値
+        static constexpr uint8_t MaxCsGpio = 28;  // CSピンのGPIO番号の最大値
+
+        if (_cs_gpio < MinCsGpio || MaxCsGpio < _cs_gpio)
+        {
+            throw Error(__FILE__, __LINE__, "Invalid slave address entered.");  // 無効なスレーブアドレスの値が入力されました
+        }
+    }
+
+    //! @brief SPIのCSピンのGPIO番号を取得
+    //! @return CSピンのGPIO番号
+    uint8_t SPI::CS_Pin::get() const noexcept
+    {
+        return _cs_gpio;
+    }
+
+    /***** class SPI::MemoryAddr *****/
+
+    //! @brief SPIスレーブ内のメモリーアドレスをセットアップ
+    SPI::MemoryAddr::MemoryAddr(uint8_t memory_addr):
+        _memory_addr(memory_addr)
+    {
+        static constexpr uint8_t MinMemoryAddr = 0x00;  // メモリーアドレスの最大値
+        static constexpr uint8_t MaxMemoryAddr = 0xff;  // メモリーアドレスの最小値
+        
+        if (_memory_addr < MinMemoryAddr || MaxMemoryAddr < _memory_addr)
+        {
+            throw Error(__FILE__, __LINE__, "Invalid memory_addr value entered.");  // 無効なメモリーアドレスの値が入力されました
+        }
+    }
+    
+    //! @brief SPIスレーブ内のメモリーアドレスを取得
+    //! @return メモリーアドレス
+    uint8_t SPI::MemoryAddr::get() const noexcept
+    {
+        return _memory_addr;
+    }
+    
+    //! @brief SPI送信用のメモリーアドレスを取得
+    //! @return 8ビット目が0に置き換えられたメモリーアドレス
+    uint8_t SPI::MemoryAddr::get_0() const noexcept
+    {
+        return _memory_addr & 0b01111111;
+    }
+    
+    //! @brief SPI受信用のメモリーアドレスを取得
+    //! @return 8ビット目が1に置き換えられたメモリーアドレス
+    uint8_t SPI::MemoryAddr::get_1() const noexcept
+    {
+        return _memory_addr | 0b10000000;
     }
 
 

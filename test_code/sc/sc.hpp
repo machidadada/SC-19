@@ -24,8 +24,7 @@
 
 //! @file sc.hpp
 //! @brief プログラム全体で共通の，基本的な機能
-//! @date 2023-10-26T17:20
-
+//! @date 2023-10-27T23:08
 
 //! @brief SCのプロジェクト全体に関わるコード
 namespace sc
@@ -271,157 +270,123 @@ namespace sc
         virtual void write(bool level) const = 0;
     };
 
-    //! @brief シリアル通信の親クラス
-    class Serial : Noncopyable
-    {
-    public:
-        //! @brief 通信先デバイスの選択．
-        //! I2Cのスレーブアドレス，SPIのCSピンのIDを管理．
-        //! 注意：このクラスを変更するとI2CクラスおよびSPIクラスに大きな影響を与えます
-        class DeviceSelect
-        {
-            const uint8_t _device_select_id;  // I2Cのスレーブアドレス，SPIのCSピンのGPIO番号に相当する値
-        public:
-            explicit DeviceSelect(uint8_t device_select_id);
-            uint8_t get() const noexcept;
-        };
-
-        //! @brief 通信先のデバイスのメモリーアドレス
-        class MemoryAddr
-        {
-            const uint8_t _memory_addr;  // メモリーアドレスのデータ
-        public:
-            explicit MemoryAddr(uint8_t memory_addr);
-            uint8_t get() const noexcept;
-            const uint8_t* ptr() const noexcept;
-        };
-
-        //! @brief シリアル通信で受信
-        //! @param size 受信するバイト数
-        //! @param device_select 通信先のデバイスのID
-        //! @return Binary型のバイト列
-        virtual Binary read(std::size_t size, DeviceSelect device_select) const = 0;
-
-        //! @brief シリアル通信で特定のメモリアドレスからのデータを受信
-        //! @param size 受信するバイト数
-        //! @param device_select 通信先のデバイスのID
-        //! @param memory_addr 通信先のデバイス内のメモリアドレス
-        //! @return Binary型のバイト列
-        virtual Binary read_mem(std::size_t size, DeviceSelect device_select, MemoryAddr memory_addr) const = 0;
-
-        //! @brief シリアル通信で送信
-        //! @param output_data 送信するデータ
-        //! @param device_select 通信先のデバイスのID
-        virtual void write(Binary output_data, DeviceSelect device_select) const = 0;
-
-        //! @brief シリアル通信で特定のメモリアドレスへのデータを送信
-        //! @param output_data 送信するデータ
-        //! @param device_select 通信先のデバイスのID
-        //! @param memory_addr 通信先のデバイス内のメモリアドレス
-        virtual void write_mem(Binary output_data, DeviceSelect device_select, MemoryAddr memory_addr) const = 0;
-
-        virtual ~Serial() {}
-    };
-
     //! @brief I2C通信の親クラス
-    class I2C : public Serial
+    class I2C : Noncopyable
     {
     public:
         //! @brief I2Cのスレーブアドレスを管理
-        using SlaveAddr = DeviceSelect;
+        class SlaveAddr
+        {
+            const uint8_t _slave_addr;
+        public:
+            explicit SlaveAddr(uint8_t slave_addr);
+            uint8_t get() const noexcept;
+        };
+    
+        //! @brief スレーブ内のメモリーアドレス
+        class MemoryAddr
+        {
+            const uint8_t _memory_addr;
+        public:
+            explicit MemoryAddr(uint8_t memory_addr);
+            uint8_t get() const noexcept;
+        };
 
         //! @brief I2Cによる受信
         //! @param size 受信するバイト数
         //! @param slave_addr 通信先のデバイスのスレーブアドレス
         //! @return Binary型のバイト列
-        Binary read(std::size_t size, SlaveAddr slave_addr) const override = 0;
+        virtual Binary read(std::size_t size, SlaveAddr slave_addr) const = 0;
 
         //! @brief I2Cによるメモリからの受信
         //! @param size 受信するバイト数
         //! @param slave_addr 通信先のデバイスのスレーブアドレス
         //! @param memory_addr 通信先のデバイス内のメモリアドレス
         //! @return Binary型のバイト列
-        Binary read_mem(std::size_t size, SlaveAddr slave_addr, MemoryAddr memory_addr) const override = 0;
+        virtual Binary read_mem(std::size_t size, SlaveAddr slave_addr, MemoryAddr memory_addr) const = 0;
 
         //! @brief I2Cによる送信
         //! @param output_data 送信するデータ
         //! @param slave_addr 通信先のデバイスのスレーブアドレス
-        void write(Binary output_data, SlaveAddr slave_addr) const override = 0;
+        virtual void write(Binary output_data, SlaveAddr slave_addr) const = 0;
 
         //! @brief I2Cによるメモリからの送信
         //! @param output_data 送信するデータ
         //! @param slave_addr 通信先のデバイスのスレーブアドレス
         //! @param memory_addr 通信先のデバイス内のメモリアドレス
-        void write_mem(Binary output_data, SlaveAddr slave_addr, MemoryAddr memory_addr) const override = 0;
+        virtual void write_mem(Binary output_data, SlaveAddr slave_addr, MemoryAddr memory_addr) const = 0;
     };
 
     //! @brief SPI通信の親クラス
-    class SPI : public Serial
+    class SPI : Noncopyable
     {
     public:
-        //! @brief SPIのスレーブアドレスを管理
-        using CS_Pin = DeviceSelect;
+        //! @brief SPIのCSピンを管理
+        class CS_Pin
+        {
+            const uint8_t _cs_gpio;
+        public:
+            explicit CS_Pin(uint8_t cs_gpio);
+            uint8_t get() const noexcept;
+        };
+    
+        //! @brief スレーブ内のメモリーアドレス
+        class MemoryAddr
+        {
+            const uint32_t _memory_addr;
+        public:
+            explicit MemoryAddr(uint8_t memory_addr);
+            uint8_t get() const noexcept;
+            uint8_t get_0() const noexcept;
+            uint8_t get_1() const noexcept;
+        };
 
         //! @brief SPIによる受信
         //! @param size 受信するバイト数
-        //! @param cs_gpio 通信先につながるCSピンのGPIO番号
+        //! @param cs_pin 通信先につながるCSピン
         //! @return Binary型のバイト列
-        Binary read(std::size_t size, CS_Pin cs_pin) const override = 0;
+        virtual Binary read(std::size_t size, CS_Pin cs_pin) const = 0;
 
         //! @brief SPIによるメモリからの受信
         //! @param size 受信するバイト数
-        //! @param cs_gpio 通信先につながるCSピンのGPIO番号
+        //! @param cs_pin 通信先につながるCSピン
         //! @param memory_addr 通信先のデバイス内のメモリアドレス
         //! @return Binary型のバイト列
-        //! メモリアドレスの8ビット目は自動的に1になります．
-        Binary read_mem(std::size_t size, CS_Pin cs_pin, MemoryAddr memory_addr) const override = 0;
+        //! メモリアドレスの8ビット目は1として扱われます．
+        virtual Binary read_mem(std::size_t size, CS_Pin cs_pin, MemoryAddr memory_addr) const = 0;
 
         //! @brief SPIによる送信
         //! @param output_data 送信するデータ
-        //! @param cs_gpio 通信先につながるCSピンのGPIO番号
-        void write(Binary output_data, CS_Pin cs_pin) const override = 0;
+        //! @param cs_pin 通信先につながるCSピン
+        virtual void write(Binary output_data, CS_Pin cs_pin) const = 0;
 
         //! @brief SPIによるメモリからの送信
         //! @param output_data 送信するデータ
-        //! @param cs_gpio 通通信先につながるCSピンのGPIO番号
+        //! @param cs_pin 通通信先につながるCSピン
         //! @param memory_addr 通信先のデバイス内のメモリアドレス
-        //! メモリアドレスの8ビット目は自動的に0になります
-        void write_mem(Binary output_data, CS_Pin cs_pin, MemoryAddr memory_addr) const override = 0;
+        //! メモリアドレスの8ビット目は0として扱われます
+        virtual void write_mem(Binary output_data, CS_Pin cs_pin, MemoryAddr memory_addr) const = 0;
     };
 
 
     //! @brief UART通信の親クラス
-    class UART : public Serial
+    class UART : Noncopyable
     {
     public:
-        //! @brief UARTでは通信先デバイスの選択を行えないため使用しません
-        using NoUse = DeviceSelect;
+        //! @brief UARTによる受信
+        //! @return Binary型のバイト列
+        //! 割り込み処理で受信していたデータを全てまとめて返す
+        virtual Binary read() const = 0;
 
         //! @brief UARTによる受信
         //! @param size 受信するバイト数
-        //! @param no_use 不要．互換性維持のためにある
         //! @return Binary型のバイト列
-        //! 割り込み処理で受信していたデータをまとめて返す
-        Binary read(std::size_t size, NoUse no_use = NoUse(0)) const override = 0;
-
-        //! @brief UART通信で特定のメモリアドレスからのデータを受信
-        //! ！非対応！
-        Binary read_mem(std::size_t size, NoUse no_use, MemoryAddr memory_addr) const override final
-        {
-            throw Error(__FILE__, __LINE__, "UART communication does not support specifying memory addresses");  // UART通信は現在，メモリアドレスの指定に対応していません
-        }
+        //! 割り込み処理で受信していたデータを直近の size バイト分返す
+        virtual Binary read(std::size_t size) const = 0;
 
         //! @brief UARTによる送信
         //! @param output_data 送信するデータ
-        //! @param no_use 不要．互換性維持のためにある
-        void write(Binary output_data, NoUse no_use = NoUse(0)) const override = 0;
-
-        //! @brief UART通信で特定のメモリアドレスへのデータを送信
-        //! ！非対応！
-        void write_mem(Binary output_data, NoUse no_use, MemoryAddr memory_addr) const override final
-        {
-            throw Error(__FILE__, __LINE__, "UART communication does not support specifying memory addresses");  // UART通信は現在，メモリアドレスの指定に対応していません
-        }
+        virtual void write(Binary output_data) const = 0;
     };
 
     //! @brief PWMに関する親クラス

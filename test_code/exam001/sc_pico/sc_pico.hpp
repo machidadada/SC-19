@@ -27,7 +27,7 @@
 
 //! @file sc_pico.hpp
 //! @brief picoに関するプログラム
-//! @date 2023-10-27T00:28
+//! @date 2023-10-28T00:37
 
 
 namespace pico
@@ -68,9 +68,9 @@ namespace pico
     public:
         I2C(Pin i2c_pin, uint32_t freq);
         sc::Binary read(std::size_t size, SlaveAddr slave_addr) const override;
-        sc::Binary read_mem(std::size_t size, SlaveAddr slave_addr, sc::Serial::MemoryAddr memory_addr) const override;
+        sc::Binary read_mem(std::size_t size, SlaveAddr slave_addr, MemoryAddr memory_addr) const override;
         void write(sc::Binary output_data, SlaveAddr slave_addr) const override;
-        void write_mem(sc::Binary output_data, SlaveAddr slave_addr, sc::Serial::MemoryAddr memory_addr) const override;
+        void write_mem(sc::Binary output_data, SlaveAddr slave_addr, MemoryAddr memory_addr) const override;
     private:
         void init_i2c();
         void set_i2c_pin();
@@ -103,9 +103,9 @@ namespace pico
     public:
         SPI(Pin spi_pin, uint32_t freq);
         sc::Binary read(std::size_t size, CS_Pin cs_pin) const override;
-        sc::Binary read_mem(std::size_t size, CS_Pin cs_pin, sc::Serial::MemoryAddr memory_addr) const override;
+        sc::Binary read_mem(std::size_t size, CS_Pin cs_pin, MemoryAddr memory_addr) const override;
         void write(sc::Binary output_data, CS_Pin cs_pin) const override;
-        void write_mem(sc::Binary output_data, CS_Pin cs_pin, sc::Serial::MemoryAddr memory_addr) const override;
+        void write_mem(sc::Binary output_data, CS_Pin cs_pin, MemoryAddr memory_addr) const override;
     private:
         void init_spi();
         void set_spi_pin();
@@ -135,8 +135,9 @@ namespace pico
         const uint32_t _freq;  // 周波数 (/s)
     public:
         UART(Pin uart_pin, uint32_t freq);
-        sc::Binary read(std::size_t size, NoUse no_use = NoUse(0)) const override;
-        void write(sc::Binary output_data, NoUse no_use = NoUse(0)) const override;
+        sc::Binary read() const override;
+        sc::Binary read(std::size_t size) const override;
+        void write(sc::Binary output_data) const override;
     private:
         void init_uart();
         void set_uart_pin();
