@@ -13,7 +13,7 @@
 
 //! @file sc_pico.cpp
 //! @brief picoに関するプログラム
-//! @date 2023-10-28T00:37
+//! @date 2023-10-28T01:22
 
 
 //! @brief ログを記録する関数です．
@@ -382,8 +382,8 @@ namespace pico
 
     /***** class UART *****/
 
-    std::deque<uint8_t> uart0_input_data;
-    std::deque<uint8_t> uart1_input_data;
+    std::deque<uint8_t> UART::uart0_input_data;
+    std::deque<uint8_t> UART::uart1_input_data;
 
     //! @brief UART通信で使うピン番号をセットアップ
     //! @param tx_gpio TXピンのGPIO番号
