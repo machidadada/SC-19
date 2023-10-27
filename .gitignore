@@ -23,3 +23,4 @@ generated
 pico-sdk
 pioasm
 *.ninja*
+*.a
