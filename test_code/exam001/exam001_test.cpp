@@ -4,6 +4,8 @@
 
 int main()
 {
+    stdio_init_all();  // pico-SDKを初期化
+    
     pico::I2C i2c(pico::I2C::Pin(4, 5), 500*1000); // GPIO4とGPIO5のピンを使う，500kHzのI2C通信をセットアップ
     sc::Exam001 exam001(i2c, sc::I2C::SlaveAddr(0x05));  // センサExam001をセットアップ．このセンサは渡されたi2cを使って通信する．
 
