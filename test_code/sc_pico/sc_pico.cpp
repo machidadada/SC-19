@@ -13,7 +13,7 @@
 
 //! @file sc_pico.cpp
 //! @brief picoに関するプログラム
-//! @date 2023-10-28T12:30
+//! @date 2023-10-28T15:47
 
 
 //! @brief ログを記録する関数です．
@@ -275,7 +275,7 @@ namespace pico
         return _cs_gpios;
     }
 
-    //! @brief SPI通信を初期化する
+    //! @brief SPI0かSPI1かを取得
     bool SPI::Pin::get_spi_id() const
     {
         return static_cast<bool>(_miso_gpio == 8 || _miso_gpio == 12);
@@ -292,6 +292,7 @@ namespace pico
         set_spi_pin();
     }
 
+    //! SPI通信を初期化する
     void SPI::init_spi()
     {
         spi_init((_spi_id ? spi1 : spi0), _freq);  // pico-SDKの関数  SPIを初期化する
@@ -448,6 +449,7 @@ namespace pico
         gpio_set_function(_uart_pin.get_rx_gpio(), GPIO_FUNC_UART);  // pico-SDKの関数  ピンの機能をUARTモードにする
     }
 
+    //! 割り込み処理を設定する
     void UART::set_irq()
     {
         if (_uart_id)
@@ -529,7 +531,7 @@ namespace pico
                     input_data.push_back(uart1_input_data.front());
                     uart1_input_data.pop_front();
                 }
-    return input_data;
+    return sc::Binary(input_data);
             } else {
     return this->read();
             }
@@ -541,7 +543,7 @@ namespace pico
                     input_data.push_back(uart0_input_data.front());
                     uart0_input_data.pop_front();
                 }
-    return input_data;
+    return sc::Binary(input_data);
             } else {
     return this->read();
             }
